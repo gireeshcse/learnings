@@ -18,6 +18,13 @@
 
 * Provides a mechanism for a client to authenticate, or prove its identity to a directory server, paving the way for rich access control to protect the information the server contains.
 
+* used to access and manage directory information over a network.
+
+* Optimized for hierarchical data organization and fast searches within directories. Typically used for read-heavy applications.
+
+* LDAP uses port **389** for unencrypted communication and port **636** for secure communication using SSL/TLS.
+
+
 #### **Entries**
     - Information model of LDAP
     - Entry
@@ -82,6 +89,52 @@
     docker pull bitnami/openldap:2.6
     docker run --name openldap bitnami/openldap:2.6
     ```
+
+- Configuring slapd
+
+    - Configuration data is stored in LDIF database, generally in
+
+        ```
+        /usr/local/etc/openldap/slapd.d
+        ```
+
+    - General layout of the config LDIF is as follows:
+
+    ```
+    # global configuration settings
+    dn: cn=config
+    objectClass: olcGlobal
+    cn: config
+    <global config settings>
+
+    # schema definitions
+    dn: cn=schema,cn=config
+    objectClass: olcSchemaConfig
+    cn: schema
+    ```
+
+#### Commands
+
+* Search Entries
+
+```
+ldapsearch -x -LLL -H ldap://server_address -b "base_dn" "(filter)"
+ldapsearch -x -LLL -H ldap://localhost -b "dc=example,dc=com" "(objectClass=person)"
+```
+
+* Add Entries
+
+```
+Filename: entry.ldif
+
+dn: cn=Ram Chandra,ou=IT,dc=example,dc=com
+objectClass: inetOrgPerson
+cn: Ram Chandra
+sn: Chandra
+mail: ram@example.com
+```
+
+* 
 
 ### References
 
