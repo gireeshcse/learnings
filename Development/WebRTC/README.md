@@ -60,10 +60,135 @@
     ```
     - HTTP
         - Used by browsers to request certain data files from the web server
+        - HTTP headers are extra pieces of information or metadata sent with a request or response
+        - HTTP header names are case insensitive.
     - TCP
         - Ensures that "data segments" are delivered correctly, and in order
+        - Responsible for breaking up a message into datagrams called segments, reassembling them at the other end, resending anything that gets lost, and putting things back in the right order. 
+        - Header
+            - Source Port
+            - Destination Port
+            - Sequence No.
+            - ACK No.
+            - Flags
+            - Options
     - IP
         - Responsible for transporting the 'data packets' to the correct IP address
+        - Routing data packets to other end
+        - Header
+            - IP Version (IPV4/IPV6)
+            - TTL
+            - Source Address
+            - Destination Address
+    
+    - Datagram
+        - Information transfered over the wire is done as a sequence of "datagrams"
+        - A packet is a physical thing, appearing on an ethernet or some wire
+        - Datagrams get sent over the internet as IP packets, and sometimes multiple packets can represent one datagram.
 
 
+- Maximum Transmission Unit
+    - 1460 bytes (1500)
+    - MTU specipies how much data can be transported over the wire in one chunk without having to do fragmentation.
+    - Measured in bytes and includes both the payload and headers
+    - Options flag
 
+- Maximum Segment Size
+    - Defines the largest amount of data(excluding headers) that a device can accept in a single segment.
+    - Smaller than MTU because MTU accounts for TCP/IP headers. 
+    - if MTU is 1500 bytes, MSS would be 1460 bytes (20 Bytes IP header and 20 Bytes TCP Header)
+
+- TCP Handshake
+    - Client -> TCP SYN -> Server
+    - Client <- SYN/ACK <- Server
+    - Client -> ACK     -> Server
+
+    - The client chooses an initial sequence number, set in the first SYN packet
+    - The server also chooses its own initial sequence number, set in the SYN/ACK packet
+    - Both the client and server acknowledges by incrementing sequence no by one and sending it ACK no.
+
+- TCP/IP model
+    - Application layer 
+        - http GET
+        - This is the layer that the user sees and interacts with
+        - It tell the next layer what type of data we are dealing with
+    - Transport layer
+        - TCP/UDP
+        - This layer packages data  in its specific format
+        - Auto assigns a port number to the process running on the host
+        - Adds TCP/UDP header
+        - Window header
+            - The amount of data that can be sent by the sender, without having to stop and wait.
+            - TCP uses a flow control(sliding window) protocol to avoid having sender send too much data too quickly for the TCP receiver to receive and process it relibly.
+            - The window size (that the receive sets) is a hard limit on how many bytes the sender can send without being forced to stop to wait for an acknowledgement(ACK)
+            - It's called 'sliding' because devices can change the window size dynamically, making it smaller when there's congestion and bigger when things are clear.
+            - TCP window size is controlled by the end devices.
+            - if network is unrealiable, window size should be small
+            - Because TCP is bi-directional, both client and server specify a window property.
+            - TCP header allow the windows size to be set to 16 bits long. This means that the maximum window size that can be advertised without using the window scale option is 65,535 bytes (With window scale option, it can increase to 1 GB)
+        - This layer takes the application data (websocket send() request) and packages it into segments, which are then sent over the internet using port numbers.
+    - Internet layer
+        - IP
+        - Reponsible for identifying which computer to send data to
+        - It takes the data from the transport layer and packages it into packets, which are then sent over the internet using IP addresses
+        - On a TCP/IP network every device must have an IP address.
+    - Network layer
+        - Ethernet/Wifi
+        - Organizes the data into raw bits, and then moves data over the internet
+        - This layer generates bit frames and also identifies the device by its MAC address.
+        - ARP
+        - Source MAC
+        - Destination MAC
+        - The MAC address is relevant only within a single network segment. When data is forwarded to another network, the router replaces the MAC address in the frame with the MAC address of the next-hop device.
+
+- Port numbers
+    - (0-65535) - Upto 1024 are generally reserved for known services.
+    - Most servers use non-ephemeral port numbers (80,8080,443)
+    - These are for communication - not security
+    - Opening custom port 
+
+        ```
+        curl --local-port 12345 localhost:3000
+        ```
+
+
+### Sockets
+
+- Everthing that happens on our computer is a process
+- Every process needs a unique socket where data can travel in and out of.
+- Every WebSocket connection first opens up a TCP connection
+- Every TCP connection is defined by two endpoints
+- Each endpoint is referred to as a socket.
+- Sockets allow processes to send and receive data over a network.
+- IP address + Port Number = Socket Address.
+- Sockets are not the same as WebSockets
+- WebSockets are a way to send/receive data between two socket endpoints.
+
+### WebSocket
+
+* A Client has to start the WebSocket handshake process
+* WebSockets are designed to work over HTTP ports - HTTP compartible
+* Client sends an HTTP GET request to the server, asking to switch over to the ws:// protocol
+* HTTP version needs to be HTTP/1.1 or greater and it also has to be a GET request
+* Once the connection is upgraded, the protocol switches from HTTP to WebSockets, and while packets are still sent over TCP, the communication now conforms to the WebSocket message format.
+* The client sends the get request to ws:// or wss:// URI and it uses HTTP "Upgrade" header.
+* The server needs to respond to the handshake request. The sernver needs to respond with 101 status code to switch.
+* From this point on, The connection is binary and does not conform to HTTP protocol.
+* If we're opening a new connection using WebSocket API, all of the handshake work and setting headers is done for you.
+
+```
+let socket = new WebSocket('https://echo.websocket.org/.ws')
+socket.onmessage = (message) => { console.log("Message from server \n"+message.data+"\n");};
+socket.send('Hello from client');
+```
+* A proxy is a just a middleman - it's another computer that sits in between the users device and the ultimate server
+
+* A reverse proxy may forward a request or not(for example in case of a cache) and it may modify it (for example changing its headers)
+
+* WebSocket is an Event-Driven API
+* Headers
+    - Connection
+    - Upgrade
+    - How proxies handle headers, there are two types
+        - End-to-End HTTP Headers
+        - HOP-by-HOP HTTP Headers
