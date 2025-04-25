@@ -189,6 +189,148 @@ socket.send('Hello from client');
 * Headers
     - Connection
     - Upgrade
+        - Only applicable for HTTP/1.1
     - How proxies handle headers, there are two types
         - End-to-End HTTP Headers
+            - These headers must be untouched they must be transferred to the ultimate recipient(The server for a requet or the client for a response)
         - HOP-by-HOP HTTP Headers
+            - Meaningful only when a proxy is involved
+            - When encountering these headers in a request, a compliant proxy should proces or action whatever it is these headers are indicating, and not forward them on to the next hop.
+            - Connection
+                - This allows the client to specify options that are desired for a particular connection.
+            - Keep-Alive
+            - Upgrade.
+    - If there is a proxy server in between client(A) and the server (C), the Upgrade header is not allowed to be passed on to the server due to its hop-by-hop nature.
+
+    - The proxy server (B) needs to be configured explicitly to open its own WS connection with the server.
+
+    - This means proxy server needs to understand websockets - not all proxy servers will work.
+
+    - Traditionally, this would mean that client(A) - Client(B) will be over one TCP connection, and the proxy(B) to server(C) will be over another TCP connection.
+
+* Nodejs CORS http header
+
+```
+const httpServer = http.createServer((req,res) => {
+    res.writeHead(200,{
+        "access-control-allow-headers": "*",
+        "access-control-allow-origin": "*"
+    });
+
+    res.end("hello");
+})
+```
+
+
+* Why BASE64
+
+    - All headers must contain only ASCII characters
+    - A way of transforming one binary sequence of data into a bunch of gibberish numbers and letters consisting of only ASCII characters.
+
+    - encodeURIComponent("&@") # client 
+
+    - The purpose of base64 is to allow non-ASCII characters to be "disguised" as ASCII characters in order to compile with rules.
+
+    - Works with UTF-8 or ASCII code.We can't envode UTF-16 into base64 directly. For this always work with the utf-8 hex values.
+
+* **Sec-WebSocket-**
+
+    - These headers are used during initial handshake process
+    - Not allowed to set these headers with fetch or xhr
+    - When we use WebSocket API, various headers will be added to our WebSocket upgrade request, AUTOMATICALLY
+
+* Sec-WebSocket-Accept
+    
+    - Sec-WebSocket-Key is a random 16-byte string, once we have 16 random characters, it is then base64 encoded and client finally sends this key to the WebSocket server
+
+    - The Server will then take the key, and adds a GUID number to the key and hashes(SHA-1) it, and sends it back as base64 as Sec-WebSocket-Accept 
+
+    - When this header is received by the client, the client checks whether it is the correct value based on the key it gave the server previously.If the values match, the client knows that a real websocket server has accepted the connection
+
+* Sec-WebSockets-Protocol
+
+    - SOAP
+        
+        - Used when dealing with XML data
+
+    - STOMP
+
+        - Streaming Text Orientated Messaging Protocol and text based messaging protocol.
+
+        - Gives access to login & passcode parameters, and command like SUBSCRIBE to facilitate communication between clients and servers through WS frames
+
+    - XMPP
+
+        - Used for instant messaging, multi-party chat, voice and video calls
+
+    - MQTT
+
+        - designed for small devices with low bandwidth
+
+
+    ```
+    let socket = new WebSocket('ws:/example.com',['stomp','xmpp'])
+    ```
+
+    ```
+    let socket = new WebSocket("ws:/localhost:8080","my-custom-json-protocol")
+
+    let msg = {
+        type: "chat",
+        data: {
+            name: "ram"
+        }
+    }
+
+    socket.onopen = function(){
+        socket.send(JSON.stringify(msg))
+    }
+
+    socket.addEventListener("message",function(event){
+        let rcvMsg = JSON.parse(event.data);
+        console.log(rcvMsg.data.message);
+    })
+    ```
+
+* Sec-WebSocket-Version
+
+    - sent by client automatically telling the server what version it wishes to use
+    - If server does not support, it returns error (426)
+     
+* Sec-WebSocket-Extensions
+
+    - Sent by the client, telling the server the extensions it supports
+    - extension is something related to transfering data
+    - Typically used to negotiate data compression
+    - Sec-WebSocket-Extensions: permessage-deflate;client_max_window_bits
+
+
+- Opening a WebSocket Connection
+
+    - creating WebSocket object
+
+        - Native object
+
+        ```
+        const ws = new WebSocket(url,[protocols])
+
+        ```
+
+        - Libraries (socket.io)
+
+    - Interfaces
+
+        - A collection of methods and properties that we have access to
+
+        - WebSocket
+            - Object given by websocket constructor
+            - Primary interface for interacting with a WebSocket server
+            - Events
+                - open
+                - close
+                - message
+                - error
+
+        - CloseEvent
+
+        - MessageEvent
