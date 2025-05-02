@@ -17,6 +17,7 @@
         - Each http connection is independent, with no memory of previous requests.
         - HTTP/1.0 Connection is closed. New connection for every http request/response.
         - HTTP/1.1 and HTTP/2, TCP connection is still kept alive i.e persistent
+        - * Although TCP connections are persistent, they are only persistent(by default) for a short period of time. For example, the default timeout in Apache HTTP server is 5 Seconds.
     - Client is the only one that can initiate an HTTP request.
     - All HTTP communication is done using TCP
     - AJAX - Short Polling
@@ -72,6 +73,7 @@
             - ACK No.
             - Flags
             - Options
+        
     - IP
         - Responsible for transporting the 'data packets' to the correct IP address
         - Routing data packets to other end
@@ -327,10 +329,21 @@ const httpServer = http.createServer((req,res) => {
             - Primary interface for interacting with a WebSocket server
             - Events
                 - open
+                    - Fires once, when the WebSocket connection is successfully opened.
                 - close
+                    - Will fire if either clilent or server closes the WebSocket connection.
                 - message
+                    - Will fire when data has been received from the server
                 - error
+                    - Will fire under a lot of scenarios(handshake error, network error, etc)
 
+
+            - binaryType property
+                - Values - blob or ArrayBuffer
+                - blob is just a container to hold raw binary data
+                - This property serves as a hint to the WebSocket API about how to handle incoming data.
+                - To work with Blobs, we sometimes have to write additional code to convert it into the data format we need.
+                - An ArrayBuffer object is an array. It contains the raw bytes of the data that was sent.
         - CloseEvent
 
         - MessageEvent
