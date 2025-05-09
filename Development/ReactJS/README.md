@@ -407,7 +407,28 @@ emailRef.current.value = '';
         newProductInfo: wantsNewProdInfo,
         productUpdateInfo: wantsProdUpdateInfo,
       };
-      // also return JSX code (has not changed) ...
+        return (
+          <div>
+            <label>
+              <input
+                type="checkbox"
+                id="pref-new"
+                checked={wantsNewProdInfo}
+                onChange={setWantsNewProdInfo}
+              />
+              <span>New Products</span>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                id="pref-updates"
+                checked={wantsProdUpdateInfo}
+                onChange={setWantsProdUpdateInfo}
+              />
+              <span>Product Updates</span>
+            </label>
+          </div>
+      );
     });
     ```
 
@@ -423,3 +444,116 @@ emailRef.current.value = '';
     };
     export default forwardRef(Preferences);
     ```
+* Controlled versus Uncontrolled Components
+
+  - Uncontrolled Components: React is not directly controlling the UI state.
+
+  - Controlled Approach
+
+  ```
+  function Preferences({newProdInfo, prodUpdateInfo, onUpdateInfo}) {
+    return (
+      <div className={classes.preferences}>
+        <label>
+          <input
+            type="checkbox"
+            id="pref-new"
+            checked={newProdInfo}
+            onChange={onUpdateInfo.bind(null, 'pref-new')}
+          />
+          <span>New Products</span>
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            id="pref-updates"
+            checked={prodUpdateInfo}
+            onChange={onUpdateInfo.bind(null, 'pref-updates')}
+          />
+          <span>Product Updates</span>
+        </label>
+      </div>
+    );
+  };
+  ```
+
+  * **bind()** default javascript method that can be called on any JS function to control which arguments will be passed to that function once its invoked in the futrue.
+
+  ```
+  function Form() {
+    const [wantsNewProdInfo, setWantsNewProdInfo] = useState(false);
+    const [wantsProdUpdateInfo, setWantsProdUpdateInfo] = useState(false);
+    function handleUpdateProdInfo(selection) {
+      // using one shared update handler function is optional
+      // you could also use two separate functions (passed to Preferences) as props
+      if (selection === 'pref-new') {
+        setWantsNewProdInfo((prevPref) => !prevPref);
+      } else if (selection === 'pref-updates') {
+        setWantsProdUpdateInfo((prevPref) => !prevPref);
+      }
+    }
+    function reset() {
+      setWantsNewProdInfo(false);
+      setWantsProdUpdateInfo(false);
+    }
+    function handleSubmit(event) {
+      event.preventDefault();
+      // state values can be used here
+      reset();
+    }
+    return (
+      <form className={classes.form} onSubmit={handleSubmit}>
+        <div className={classes.formControl}>
+          <label htmlFor="email">Your email</label>
+          <input type="email" id="email" />
+        </div>
+        <Preferences
+          newProdInfo={wantsNewProdInfo}
+          prodUpdateInfo={wantsProdUpdateInfo}
+          onUpdateInfo={handleUpdateProdInfo}
+        />
+        <button>Submit</button>
+      </form>
+    );
+  }
+  ```
+
+  * It is a good practice to go for controlled components in most cases. If we are only extracting some entered user input values, however, then using Refs and creating an uncontrolled component is absolutely fine.
+
+  ### Portals
+
+  * Allows us to instruct React to insert a DOM element in a differenct place than where it would normally be inserted.
+
+  * To use this portal feature, we must first define a place wherein elements can be inserted
+
+  ```
+  index.html
+
+    <body>
+      <div id="root"></div>
+      <div id="dialogs"></div>
+      <script type="module" src="/src/main.jsx"></script>
+    </body>
+
+  ```
+
+  ```
+  import { createPortal } from 'react-dom';
+  import classes from './ErrorDialog.module.css';
+  function ErrorDialog({ onClose }) {
+    return createPortal(
+      <>
+        <div className={classes.backdrop}></div>
+        <dialog className={classes.dialog} open>
+          <p>
+            This form contains invalid values. Please fix those errors before
+            submitting the form again!
+          </p>
+          <button onClick={onClose}>Okay</button>
+        </dialog>
+      </>,
+      document.getElementById('dialogs')
+    );
+  }
+  export default ErrorDialog;
+  ```
