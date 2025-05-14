@@ -520,6 +520,12 @@ emailRef.current.value = '';
 
   * It is a good practice to go for controlled components in most cases. If we are only extracting some entered user input values, however, then using Refs and creating an uncontrolled component is absolutely fine.
 
+  * Refs can be used to gain direct access to DOM elements or to store values that won't be reset or changed whech the surrounding component is re-evaluated
+
+  * Refs should be used for direct access to read values, not to manipulate DOM elements. For this, we should leave to React. We can use refs for calling the methods such as focus()
+
+  * Components that gain DOM access via Refs, instead of state and other React features, are considered uncontrolled components.
+
   ### Portals
 
   * Allows us to instruct React to insert a DOM element in a differenct place than where it would normally be inserted.
@@ -557,3 +563,478 @@ emailRef.current.value = '';
   }
   export default ErrorDialog;
   ```
+
+  * Portals are used to instruct React to render JSX elements in a different place in the DOM than they normally would.
+
+  ### Side Effects
+
+  * Side effects are actions or processes that occur in addition to another main process which does the component render cycle for updating the user interface.
+
+  * Sending an HTTP request doesn't directly influence the user interface while response data is used for rendering. HTTP requests are asynchronous tasks which is side effect of some event such as clicking the button etc.
+
+  * Any action that started upon the execution of React component function is a side effect if that action is not directly related to the main task of rendering the components user interface.
+
+  * Examples of side effects
+
+    - Sending an HTTP request
+    - Storing data or fetching data from browser storage
+    - Setting timers or intervalus
+    - Logging data to console via console.log()
+
+#### useEffect()
+
+```
+import { useState, useEffect } from 'react';
+async function fetchPosts() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const blogPosts = await response.json();
+  return blogPosts;
+}
+function BlogPosts() {
+  const [loadedPosts, setLoadedPosts] = useState([]);
+  useEffect(function () {
+    fetchPosts().then((fetchedPosts) => setLoadedPosts(fetchedPosts));
+  }, []);
+  return (
+    <ul>
+      {loadedPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+export default BlogPosts;
+```
+
+* The first argument is a function that will be executed by React.The second argument is always an array which specifies the dependencies of the effect function.Change in ny dependency specified in this arrary causes the effect function execution.
+
+* If dependecy is omitted, then react executes the effect function after every component re-evalution. If empty array is provided, it will be executed once.
+
+```
+import { useState, useEffect } from 'react';
+async function fetchPosts(url) {
+  const response = await fetch(url);
+  const blogPosts = await response.json();
+  return blogPosts;
+}
+function BlogPosts({ url }) {
+  const [loadedPosts, setLoadedPosts] = useState([]);
+  useEffect(function () {
+    fetchPosts(url)
+     .then((fetchedPosts) => setLoadedPosts(fetchedPosts));
+  }, [url]);
+  return (
+    <ul>
+      {loadedPosts.map((post) => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+export default BlogPosts;
+```
+
+* The common effect dependencies are
+  - state values, props and functions that might be executed inside of the effect function.
+
+  - Any value that's not defined inside a component function shouldn't be added to the dependencies array.
+
+  - In Javascript, functions are actually objects. When the code that contains a function is executed again(eg: a component function being executed by React), a new function object will be created in memory.
+
+
+* Cleaning up after effects
+
+  ```
+  // Alert.jsx
+  import { useState, useEffect } from 'react';
+  function Alert() {
+    const [alertDone, setAlertDone] = useState(false);
+    useEffect(function () {
+      console.log('Starting Alert Timer!');
+      setTimeout(function () {
+        console.log('Timer expired!');
+        setAlertDone(true);
+      }, 2000);
+    }, []);
+    return (
+      <>
+        {!alertDone && <p>Relax, you still got some time!</p>}
+        {alertDone && <p>Time to get up!</p>}
+      </>
+    );
+  }
+  export default Alert;
+  ```
+
+  ```
+  // App.jsx
+  import { useState } from 'react';
+  import Alert from './components/Alert.jsx';
+  function App() {
+    const [showAlert, setShowAlert] = useState(false);
+    function handleShowAlert() {
+      // state updating is done by passing a function to setShowAlert
+      // because the new state depends on the previous state (it's the opposite)
+      setShowAlert((isShowing) => !isShowing);
+    }
+    return (
+      <>
+        <button onClick={handleShowAlert}>
+          {showAlert ? 'Hide' : 'Show'} Alert
+        </button>
+        {showAlert && <Alert />}
+      </>
+    );
+  }
+  export default App;
+  ```
+
+  - In above example, if we start toggling the alert, the timer is set every time the Alert component is rendered, but it will not clear existing timer. This results in running timers simultaneously.
+
+  - For HTTP requests, we should abort any ongoing HTTP request before a new one is sent.
+
+  - In these cases, we need to clean up the effect before it runs again.
+
+  - **useEffect()** can return an optional cleanup function. Which will be executed every time before it runs the effect again.
+
+  ```
+    useEffect(function () {
+      let timer;
+      console.log('Starting Alert Timer!');
+      timer = setTimeout(function () {
+        console.log('Timer expired!');
+        setAlertDone(true);
+      }, 2000);
+      return function() {
+        clearTimeout(timer);
+      }
+    }, []);
+  ```
+  - The cleanup function is not executed when the effect function is called for the first time. However, it will be called by React whenever a component that contains an effect unmounts(Removed from DOM)
+
+- Dealing with multiple effects
+
+  - Better approach would be to split our effect functions by dependencies
+  ```
+  function Demo() {
+    const [a, setA] = useState(0); // state updating functions aren't called
+    const [b, setB] = useState(0); // in this example
+    useEffect(function() {
+      console.log(a);
+    }, [a]);  
+  
+    useEffect(function() {
+      console.log(b);
+    }, [b]);
+    // return some JSX code ...
+  }
+
+  ```
+
+* Functions as dependencies
+
+  ```
+  function Alert() {
+    const [alertMsg, setAlertMsg] = useState('Expired!');
+    function handleChangeAlertMsg(event) {
+      setAlertMsg(event.target.value);
+    }
+    function setAlert() {
+      setTimeout(function () {
+        console.log(alertMsg);
+      }, 2000);
+    }
+    useEffect(
+      function () {
+        setAlert();
+      },
+      []
+    );
+    return <input type="text" onChange={handleChangeAlertMsg} />;
+  }
+  export default Alert;
+  ```
+
+  * Initially, alertMsg is set to "Expired!"
+  * useEffect runs once (because of the empty dependency array []), triggering setAlert()
+  * setAlert() sets a timeout of 2 seconds, after which it logs the value of alertMsg
+  * However, since the timeout function captures the value of alertMsg when setAlert was called (the initial state "Expired!"), any future changes to alertMsg won’t be reflected in this timeout.
+  * If the user changes the input, alertMsg updates. However, setAlert() does NOT re-run because useEffect only runs once when the component mounts.
+
+  ```
+  // FIX
+  useEffect(
+    function () {
+      setAlert();
+    },
+    [setAlert]
+  );
+  ```
+  * If we need the final message
+  ```
+  function setAlert() {
+    return setTimeout(function () {
+      console.log(alertMsg);
+    }, 2000);
+  }
+  useEffect(
+    function () {
+      const timer = setAlert();
+      return function () {
+        clearTimeout(timer);
+      };
+    },
+    [setAlert]
+  );
+  ```
+  * Moving the depencies
+
+  ```
+  useEffect(
+    function () {
+      function setAlert() {
+        return setTimeout(function () {
+          console.log(alertMsg);
+        }, 2000);
+      }
+      const timer = setAlert();
+      return function () {
+        clearTimeout(timer);
+      };
+    },
+    [alertMsg]
+  );
+  ```
+
+* Always add all non-external dependencies - no matter whether they're variables or functions
+* Functions are just objects and can change if their surrounding code executes again.
+
+#### useCallback
+
+- This ensures that a function is only recreated if one of the specified dependencies has changed. The default JS behavior of creating a new function object whenever the surrounding code executes again is disabled.
+
+```
+import { useState, useEffect, useCallback } from 'react';
+function Alert() {
+  const [enteredEmail, setEnteredEmail] = useState('');
+  const [enteredPassword, setEnteredPassword] = useState('');
+  function handleUpdateEmail(event) {
+    setEnteredEmail(event.target.value);
+  }
+  function handleUpdatePassword(event) {
+    setEnteredPassword(event.target.value);
+  }
+  const validateEmail = useCallback(
+    function () {
+      if (!enteredEmail.includes('@')) {
+        console.log('Invalid email!');
+      }
+    },
+    [enteredEmail]
+  );
+  useEffect(
+    function() {
+      validateEmail();
+    },
+    [validateEmail]
+  );
+  // return JSX code ...
+}
+export default Alert;
+```
+
+* **Unnecessary effect execution is the usage of objects as dependencies**
+
+```
+// Error.jsx
+import { useEffect } from 'react';
+function Error(props) {
+  useEffect(
+    function () {
+      // performing some error logging
+      // in a real app, a HTTP request might be sent to some analytics API
+      console.log('An error occurred!');
+      console.log(props.message);
+    },
+    [props]
+  );
+  return <p>{props.message}</p>;
+}
+export default Error;
+```
+
+```
+import { useState } from 'react';
+import Error from './Error.jsx';
+function Form() {
+  const [enteredEmail, setEnteredEmail] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  function handleUpdateEmail(event) {
+    setEnteredEmail(event.target.value);
+  }
+  function handleSubmitForm(event) {
+    event.preventDefault();
+    if (!enteredEmail.endsWith('.com')) {
+      setErrorMessage('Only email addresses ending with .com are accepted!');
+    }
+  }
+  return (
+    <form onSubmit={handleSubmitForm}>
+      <div>
+        <label>Email</label>
+        <input type="email" onChange={handleUpdateEmail} />
+      </div>
+      {errorMessage && <Error message={errorMessage} />}
+      <button>Submit</button>
+    </form>
+  );
+}
+export default Form;
+
+```
+* The useEffect dependency [props] is problematic because props is an object reference, and React re-creates props whenever Form re-renders. This can cause unnecessary effect executions.
+
+```
+// FIX
+useEffect(
+  function () {
+    console.log('An error occurred!');
+    console.log(props.message);
+  },
+  [props.message]
+);
+```
+
+#### Effects and Asynchronous code
+
+* The effect function itself should not be asynchronous and should not return a promise like below
+
+  ```
+  useEffect(async function () {
+    const fetchedPosts = await fetchPosts();
+    setLoadedPosts(fetchedPosts);
+  }, []);
+  ```
+
+* To avoid the warnings in above cases, we can use promises without async/wait like below
+
+  ```
+  useEffect(function () {
+    fetchPosts().then((fetchedPosts) => setLoadedPosts(fetchedPosts));
+  }, []);
+
+  // Other Alterative
+  useEffect(function () {
+    async function loadData() {
+      const fetchedPosts = await fetchPosts();
+      setLoadedPosts(fetchedPosts);
+    }
+  
+    loadData();
+  }, []);
+  ```
+
+### Rules of Hooks
+
+- Only call hooks at the top level of component functions.Don't call them inside of if statements, loops or nested functions
+- Only call hooks inside of react components or custom hooks.
+
+### Effects
+
+* Actions that are not directly related to the main process of a function can be considered side effects.
+* If no dependency array is specified, the effect function executes after every component function invocation.
+* For function dependencies, useCallback() can help reduce the number of effect executions.
+* For object dependencies, destructuring can help reduce the number of effect executions.
+
+### Steps to cancel a fetch call in useEffect
+
+- Create an instance of AbortController
+- Pass the controllers signal to the fetch request
+- Call abort() inside the cleanup function
+
+```
+import { useEffect, useState } from 'react';
+
+function FetchData() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    fetch('https://jsonplaceholder.typicode.com/posts', { signal })
+      .then((response) => response.json())
+      .then((data) => setData(data))
+      .catch((err) => {
+        if (err.name === 'AbortError') {
+          console.log('Fetch aborted');
+        } else {
+          setError(err.message);
+        }
+      });
+
+    return () => {
+      controller.abort(); // Cleanup: Cancel fetch if the component unmounts
+    };
+  }, []);
+
+  return (
+    <div>
+      {error && <p>Error: {error}</p>}
+      {data && <p>Fetched {data.length} items</p>}
+    </div>
+  );
+}
+
+export default FetchData;
+```
+
+```
+// apiService.js
+export async function fetchData(endpoint, params = {}) {
+  const url = `https://jsonplaceholder.typicode.com/${endpoint}`;
+  const options = {
+    method: 'GET',
+    ...params, // You can pass additional options like headers here
+  };
+
+  try {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error('Network response was not ok');
+    return await response.json();
+  } catch (error) {
+    console.error('Fetch error:', error);
+    throw error; // Propagate the error
+  }
+}
+
+// FetchComponent.jsx
+import { useEffect, useState } from 'react';
+import { fetchData } from './apiService';
+
+function FetchComponent() {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetchData('posts', { signal: controller.signal })
+      .then(setData)
+      .catch(setError);
+
+    return () => controller.abort(); // Cleanup
+  }, []);
+
+  return (
+    <div>
+      {error && <p>Error: {error.message}</p>}
+      {data && <p>Fetched {data.length} items</p>}
+    </div>
+  );
+}
+
+export default FetchComponent;
+
+```
