@@ -1038,3 +1038,199 @@ function FetchComponent() {
 export default FetchComponent;
 
 ```
+
+### Handling User Input & Forms
+
+```
+function App() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  function handleSubmit(event) {
+    event.preventDefault();
+    const credentials = { email, password };
+    console.log(credentials);
+  }
+  function handleEmailChange(event) {
+    setEmail(event.target.value);
+  }
+  function handlePasswordChange(event) {
+    setPassword(event.target.value);
+  }
+  return (
+    <form onSubmit={handleSubmit}>
+      <p>
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={handleEmailChange}
+        />
+      </p>
+      <p>
+        <label htmlFor="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={handlePasswordChange}
+        />
+      </p>
+      <p className="actions">
+        <button>Login</button>
+      </p>
+    </form>
+  );
+}
+```
+
+```
+function App() {
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  function handleSubmit(event) {
+    event.preventDefault();
+    const credentials = {
+      email: emailRef.current.value,
+      password: passwordRef.current.value,
+    };
+    console.log(credentials);
+  }
+  return (
+    <form onSubmit={handleSubmit}>
+      <p>
+        <label htmlFor="email">Email</label>
+        <input type="email" id="email" ref={emailRef} />
+      </p>
+      <p>
+        <label htmlFor="password">Password</label>
+        <input type="password" id="password" ref={passwordRef} />
+      </p>
+      <p className="actions">
+        <button>Login</button>
+      </p>
+    </form>
+  );
+}
+```
+
+```
+function App() {
+  function handleSubmit(event) {
+    event.preventDefault();
+    const fd = new FormData(event.currentTarget);
+    const credentials = {
+      email: fd.get('email'),
+      password: fd.get('password'),
+    };
+    console.log(credentials);
+  }
+  return (
+    <form onSubmit={handleSubmit}>
+      <p>
+        <label htmlFor="email">Email</label>
+        <input type="email" id="email" name="email" />
+      </p>
+      <p>
+        <label htmlFor="password">Password</label>
+        <input type="password" id="password" name="password" />
+      </p>
+      <p className="actions">
+        <button>Login</button>
+      </p>
+    </form>
+  );
+}
+```
+* The above approach would not be ideal, if our application needs to change input values, using only FormData since we need to write the imperative code such as below to update an input field
+
+```
+function clearInput() {
+  document.getElementById('email').value = ''; // imperative code :(
+}
+```
+
+* if we need to access the input fields outside of handleSubmit() where event object is not available, then  working with Refs will simplify things.
+
+```
+const emailRef = useRef(null);
+function showForm() {
+  // other code ...
+  emailRef.current.focus(); 
+}
+// simplified JSX code below
+return (
+  <form>
+    <input ref={emailRef} />
+  </form>
+);
+```
+
+* Handling form submissions with Actions
+
+  - React 19 consists of two kinds of actions
+      
+      - Client actions
+      - Server actions
+
+  - Client actions introduced to simplify the process of handling form submissions and data extractions
+
+  ```
+  function App() {
+    function submitAction(formData) {
+      const credentials = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+      };
+      console.log(credentials);
+    }
+    return (
+      <form action={submitAction}>
+        <p>
+          <label htmlFor="email">Email</label>
+          <input type="email" id="email" name="email" />
+        </p>
+        <p>
+          <label htmlFor="password">Password</label>
+          <input type="password" id="password" name="password" />
+        </p>
+        <p className="actions">
+          <button>Login</button>
+        </p>
+      </form>
+    );
+  }
+  ```
+  - Here on form submission, the react will prevent the browser default and create a form data object for us
+
+
+  ```
+  // Synchronous action
+  function storeTaskAction(formData) {
+  const task = {
+    title: formData.get('title'),
+    body: formData.get('body'),
+    dueDate: formData.get('date')
+  };
+  localStorage.setItem('daily-task', JSON.stringify(task));
+}
+```
+
+```
+//Asynchronous action
+async function storeTodoAction(formData) {
+  const todoTitle = formData.get('title');
+  const response = await fetch(
+    'https://jsonplaceholder.typicode.com/todos', 
+    {
+      method: 'POST',
+      body: JSON.stringify({ title: todoTitle }),
+      headers: {
+        'Content-type': 'application/json; charset=UTF-8',
+      },
+    }
+  );
+  const todo = await response.json();
+  console.log(todo);
+} 
+```
