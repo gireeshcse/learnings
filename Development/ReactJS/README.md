@@ -1201,12 +1201,13 @@ return (
     );
   }
   ```
+
   - Here on form submission, the react will prevent the browser default and create a form data object for us
 
 
-  ```
-  // Synchronous action
-  function storeTaskAction(formData) {
+```
+// Synchronous action
+function storeTaskAction(formData) {
   const task = {
     title: formData.get('title'),
     body: formData.get('body'),
